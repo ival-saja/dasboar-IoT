@@ -1,89 +1,90 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <title>Dashboard IoT ESP32 MQTT</title>
+  <meta charset="UTF-8">
+  <title>ESP32 Remote Reset</title>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f6f8;
+      background: #0f172a;
+      color: #e5e7eb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .card {
+      background: #020617;
+      padding: 30px;
+      border-radius: 12px;
       text-align: center;
-      padding: 40px;
+      box-shadow: 0 0 20px rgba(0,255,255,0.2);
+      width: 320px;
     }
     h1 {
-      color: #333;
+      margin-bottom: 10px;
     }
     button {
-      padding: 12px 20px;
-      margin: 10px;
-      font-size: 16px;
+      background: #dc2626;
       border: none;
+      padding: 15px 30px;
+      color: white;
+      font-size: 18px;
       border-radius: 8px;
       cursor: pointer;
-    }
-    .on { background: #4CAF50; color: white; }
-    .off { background: #f44336; color: white; }
-    .card {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      display: inline-block;
       margin-top: 20px;
     }
-    #status {
-      margin-top: 10px;
-      font-weight: bold;
+    button:hover {
+      background: #b91c1c;
+    }
+    .status {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #22c55e;
     }
   </style>
 </head>
 <body>
 
-  <h1>Dashboard IoT ESP32 (MQTT)</h1>
+<div class="card">
+  <h1>ESP32 Control</h1>
+  <p>Remote Reset via MQTT</p>
 
-  <div class="card">
-    <p>Status MQTT:</p>
-    <p id="status">Menghubungkan...</p>
+  <button onclick="resetESP()">🔄 RESET ESP32</button>
 
-    <h3>Kontrol LED</h3>
-    <button class="on" onclick="ledOn()">LED ON</button>
-    <button class="off" onclick="ledOff()">LED OFF</button>
+  <div class="status" id="status">Menghubungkan ke MQTT...</div>
+</div>
 
-    <h3>Data Sensor</h3>
-    <p id="sensor">-</p>
-    <p id="tegangan">-</p>
-  </div>
+<script>
+  // ================= MQTT CONFIG =================
+  const broker = "wss://5ce43b5ff14e439992bf783a9c4fbd58.s1.eu.hivemq.cloud:8884/mqtt";
+  const options = {
+    username: "pudica12",
+    password: "Erika145",
+    clientId: "WEB_RESET_" + Math.random().toString(16).substr(2, 8)
+  };
 
-  <script>
-    // Koneksi MQTT via WebSocket
-    const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
+  const topicCmd = "pudica/command";
+  const statusEl = document.getElementById("status");
 
-    client.on("connect", () => {
-      document.getElementById("status").innerText = "Terhubung ke MQTT";
-      client.subscribe("iot/esp32/sensor");
-    });
+  const client = mqtt.connect(broker, options);
 
-    client.on("error", () => {
-      document.getElementById("status").innerText = "Gagal koneksi MQTT";
-    });
+  client.on("connect", () => {
+    statusEl.innerHTML = "🟢 MQTT Connected";
+    console.log("Connected to MQTT");
+  });
 
-    client.on("message", (topic, message) => {
-      if (topic === "iot/esp32/sensor") {
-        const data = JSON.parse(message.toString());
-        document.getElementById("sensor").innerText = "Nilai Sensor: " + data.sensor;
-        document.getElementById("tegangan").innerText = "Tegangan: " + data.tegangan + " V";
-      }
-    });
+  client.on("error", (err) => {
+    statusEl.innerHTML = "🔴 MQTT Error";
+    console.error(err);
+  });
 
-    function ledOn() {
-      client.publish("iot/esp32/control", "ON");
-    }
-
-    function ledOff() {
-      client.publish("iot/esp32/control", "OFF");
-    }
-  </script>
+  function resetESP() {
+    client.publish(topicCmd, "RESET");
+    statusEl.innerHTML = "⚡ RESET dikirim ke ESP32";
+  }
+</script>
 
 </body>
 </html>
