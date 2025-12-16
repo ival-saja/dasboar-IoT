@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard IoT ESP32 MQTT</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      text-align: center;
+      padding: 40px;
+    }
+    h1 {
+      color: #333;
+    }
+    button {
+      padding: 12px 20px;
+      margin: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .on { background: #4CAF50; color: white; }
+    .off { background: #f44336; color: white; }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      display: inline-block;
+      margin-top: 20px;
+    }
+    #status {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Dashboard IoT ESP32 (MQTT)</h1>
+
+  <div class="card">
+    <p>Status MQTT:</p>
+    <p id="status">Menghubungkan...</p>
+
+    <h3>Kontrol LED</h3>
+    <button class="on" onclick="ledOn()">LED ON</button>
+    <button class="off" onclick="ledOff()">LED OFF</button>
+
+    <h3>Data Sensor</h3>
+    <p id="sensor">-</p>
+    <p id="tegangan">-</p>
+  </div>
+
+  <script>
+    // Koneksi MQTT via WebSocket
+    const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
+
+    client.on("connect", () => {
+      document.getElementById("status").innerText = "Terhubung ke MQTT";
+      client.subscribe("iot/esp32/sensor");
+    });
+
+    client.on("error", () => {
+      document.getElementById("status").innerText = "Gagal koneksi MQTT";
+    });
+
+    client.on("message", (topic, message) => {
+      if (topic === "iot/esp32/sensor") {
+        const data = JSON.parse(message.toString());
+        document.getElementById("sensor").innerText = "Nilai Sensor: " + data.sensor;
+        document.getElementById("tegangan").innerText = "Tegangan: " + data.tegangan + " V";
+      }
+    });
+
+    function ledOn() {
+      client.publish("iot/esp32/control", "ON");
+    }
+
+    function ledOff() {
+      client.publish("iot/esp32/control", "OFF");
+    }
+  </script>
+
+</body>
+</html>
